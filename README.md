@@ -1,148 +1,39 @@
-1. Perbedaan antara Navigator.push() dan Navigator.pushReplacement()
+Mengapa perlu membuat model Dart untuk data JSON?
+Karena kalau langsung pakai Map<String, dynamic>, kita kehilangan type safety, null safety, dan autocompletion di IDE. Akibatnya:
 
-🔹 Navigator.push()
+Rawan error saat runtime (misal salah akses key, atau nilai ternyata null)
+Harus null-check manual di mana-mana
+Sulit maintain dan refactor kalau backend ubah nama field
+Tidak ada bantuan dari Dart analyzer
 
-Digunakan untuk menambahkan halaman baru di atas stack navigasi (halaman sebelumnya tetap ada di bawah).
+Dengan model Dart (class + fromJson/toJson), kode jadi aman, rapi, mudah dibaca, dan otomatis ikut perubahan struktur JSON.
+Fungsi package http dan CookieRequest
 
-Ketika user menekan tombol back, aplikasi akan kembali ke halaman sebelumnya.
+http: cuma buat kirim request biasa (GET, POST, dll.), tapi tidak menyimpan cookie session secara otomatis.
+CookieRequest (dari package pbp_django_auth): wrapper dari http yang otomatis menyimpan dan mengirim cookie sessionid + csrftoken ke Django setiap kali request.
 
-digunakan ketika pengguna ingin kembali ke halaman sebelumnya.
+Jadi setelah login, semua request harus pakai CookieRequest supaya Django tahu kita sudah login.
+Mengapa CookieRequest harus dibagikan ke seluruh aplikasi?
+Karena session Django disimpan di cookie. Kalau tiap halaman bikin instance CookieRequest baru, cookie-nya hilang → Django anggap kita belum login → selalu kena redirect atau 403. Makanya kita pakai Provider supaya satu instance CookieRequest dipakai bersama di seluruh aplikasi.
+Konfigurasi agar Flutter bisa connect ke Django
 
-🔹 Navigator.pushReplacement()
+Django ALLOWED_HOSTS harus ditambah '10.0.2.2' (IP khusus emulator Android ke host komputer)
+Pasang django-cors-headers biar browser tidak blokir request dari Flutter web/mobile
+Set SameSite=None dan Secure=true untuk cookie (khusus produksi/HTTPS)
+Tambah izin internet di AndroidManifest.xml
 
-Digunakan untuk mengganti halaman saat ini dengan halaman baru.
+Kalau salah satu tidak diatur, hasilnya: tidak bisa login, tidak bisa ambil data, atau muncul error CORS / DisallowedHost.
+Alur pengiriman data dari form Flutter sampai muncul di aplikasi
 
-Halaman sebelumnya dihapus dari stack, sehingga user tidak bisa kembali ke halaman sebelumnya menggunakan tombol back.
+User isi form → data masuk ke controller/state
+Tekan submit → data diubah jadi object Dart → di-convert ke JSON lewat toJson()
+Kirim pakai request.postJson() (otomatis bawa cookie session)
+Django terima → validasi → simpan ke database → kembalikan response JSON
+Flutter baca response → kalau sukses, refresh list / kembali ke halaman sebelumnya
 
-🛍️ Dalam aplikasi Football Shop:
+Mekanisme autentikasi (login, register, logout)
 
-Gunakan Navigator.push() saat membuka halaman seperti “Tambah Produk” dari halaman utama. 
-Misalnya:
-
-Navigator.push(
-  context,
-  MaterialPageRoute(builder: (context) => const NewsFormPage()),
-);
-
-Navigator.pushReplacement() digunakan ketika user ingin mengganti halaman sepenuhnya, contohnya setelah pengguna logout.
-
-2. Pemanfaatan hierarchy widget seperti Scaffold, AppBar, dan Drawer
-
-🔹 Scaffold
-
-Memberikan struktur dasar halaman seperti AppBar, body, dan Drawer.
-
-Semua halaman utama di aplikasi Football Shop menggunakan Scaffold agar layout-nya konsisten.
-
-🔹 AppBar
-
-Menampilkan judul halaman seperti “Merkurius Football Shop” di bagian atas.
-
-Diberi warna hijau agar seragam dengan tema brand.
-
-🔹 Drawer
-
-Menyediakan navigasi utama aplikasi (misalnya: “Halaman Utama” dan “Tambah Produk”).
-
-Diletakkan di dalam Scaffold supaya bisa diakses dari setiap halaman.
-
-Contoh penggunaan di Football Shop:
-
-return Scaffold(
-  appBar: AppBar(
-    backgroundColor: Colors.green,
-    title: const Text('Merkurius Football Shop'),
-  ),
-  drawer: Drawer(
-    child: ListView(
-      children: [
-        ListTile(
-          leading: const Icon(Icons.home),
-          title: const Text('Halaman Utama'),
-          onTap: () {
-            Navigator.pop(context);
-          },
-        ),
-        ListTile(
-          leading: const Icon(Icons.add),
-          title: const Text('Tambah Produk'),
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const NewsFormPage()),
-            );
-          },
-        ),
-      ],
-    ),
-  ),
-  body: ...
-);
-
-
-3. Kelebihan menggunakan layout widget seperti Padding, SingleChildScrollView, dan ListView dalam form
-
-🔹 Padding
-
-Menambahkan jarak agar elemen tidak terlalu mepet dengan tepi layar.
-
-Membuat tampilan lebih rapi dan nyaman dibaca.
-
-🔹 SingleChildScrollView
-
-Memungkinkan halaman bisa di-scroll saat elemen form terlalu banyak.
-
-Berguna pada layar kecil agar input tidak terpotong ketika keyboard muncul.
-
-🔹 ListView
-
-Mirip dengan SingleChildScrollView, tapi lebih fleksibel untuk menampilkan banyak widget secara vertikal (otomatis scrollable).
-
-Contoh dari halaman form “Tambah Produk”:
-
-body: SingleChildScrollView(
-  padding: const EdgeInsets.all(16.0),
-  child: Column(
-    children: [
-      TextFormField(
-        decoration: const InputDecoration(labelText: 'Nama Produk'),
-        validator: (value) =>
-            value == null || value.isEmpty ? 'Nama tidak boleh kosong' : null,
-      ),
-      const SizedBox(height: 16),
-      TextFormField(
-        decoration: const InputDecoration(labelText: 'Harga Produk'),
-        keyboardType: TextInputType.number,
-        validator: (value) {
-          if (value == null || value.isEmpty) return 'Harga wajib diisi';
-          if (int.tryParse(value)! < 0) return 'Harga tidak boleh negatif';
-          return null;
-        },
-      ),
-      const SizedBox(height: 16),
-      TextFormField(
-        decoration: const InputDecoration(labelText: 'Deskripsi Produk'),
-        maxLines: 3,
-      ),
-    ],
-  ),
-),
-
-
-4. Menyesuaikan warna tema agar konsisten dengan brand Football Shop
-
-Warna utama toko adalah hijau, sehingga digunakan sebagai seed color pada ThemeData:
-
-theme: ThemeData(
-  colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
-  useMaterial3: true,
-),
-
-Komponen utama seperti AppBar, tombol, dan header menggunakan warna hijau:
-
-backgroundColor: Colors.green,
-
-
-Warna teks dan ikon dibuat kontras (putih) agar mudah dibaca:
-
-style: const TextStyle(color: Colors.white)
+Register: Flutter kirim username + password → Django buat user → langsung login otomatis → kirim cookie sessionid
+Login: Flutter kirim username + password → Django cek dengan authenticate() → kalau benar, panggil login() → buat session → kirim cookie sessionid
+Setelah login: semua request berikutnya otomatis bawa cookie → Django tahu user siapa lewat request.user
+Logout: Flutter panggil endpoint logout → Django hapus session di server dan cookie di client → kembali ke halaman login

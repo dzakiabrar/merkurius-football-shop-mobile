@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:merkurius_football_shop/screens/menu.dart';
 import 'package:merkurius_football_shop/screens/newslist_form.dart';
+import 'package:merkurius_football_shop/screens/news_entry_list.dart';
 
 class LeftDrawer extends StatelessWidget {
   const LeftDrawer({super.key});
@@ -36,6 +37,8 @@ class LeftDrawer extends StatelessWidget {
               ],
             ),
           ),
+
+          // 🔹 Halaman Utama
           ListTile(
             leading: const Icon(Icons.home_outlined),
             title: const Text('Halaman Utama'),
@@ -46,6 +49,8 @@ class LeftDrawer extends StatelessWidget {
               );
             },
           ),
+
+          // 🔹 Tambah Produk
           ListTile(
             leading: const Icon(Icons.add_box_outlined),
             title: const Text('Tambah Produk'),
@@ -53,6 +58,18 @@ class LeftDrawer extends StatelessWidget {
               Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(builder: (context) => const NewsFormPage()),
+              );
+            },
+          ),
+
+          // 🔹 🔥 List baru: News List
+          ListTile(
+            leading: const Icon(Icons.add_reaction_rounded),
+            title: const Text('News List'),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const NewsEntryListPage()),
               );
             },
           ),
